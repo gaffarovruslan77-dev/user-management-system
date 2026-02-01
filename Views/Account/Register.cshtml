@@ -1,47 +1,360 @@
 @model UserManagementApp.Models.RegisterViewModel
 @{
     ViewData["Title"] = "Register";
-    Layout = "_Layout";
+    Layout = null;
 }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - The App</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-<div class="row justify-content-center">
-    <div class="col-md-6 col-lg-4">
-        <div class="card shadow">
-            <div class="card-body">
-                <h2 class="text-center mb-4">Register</h2>
-                
-                <form asp-action="Register" method="post">
-                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
-                    
-                    <div class="mb-3">
-                        <label asp-for="Name" class="form-label">Name</label>
-                        <input asp-for="Name" class="form-control" placeholder="Enter your name" />
-                        <span asp-validation-for="Name" class="text-danger"></span>
+        body {
+            font-family: 'Montserrat', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            width: 100%;
+            height: 100vh;
+        }
+
+        /* Left Panel - Form */
+        .left-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            background: #ffffff;
+            padding: 80px;
+        }
+
+        .logo {
+            position: absolute;
+            top: 80px;
+            left: 80px;
+            font-size: 38px;
+            font-weight: 800;
+            letter-spacing: 10px;
+            color: #2563eb;
+        }
+
+        .content-wrapper {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            justify-content: space-between;
+        }
+
+        .form-container {
+            max-width: 480px;
+            width: 100%;
+            margin: auto;
+            padding-top: 100px;
+        }
+
+        .form-header {
+            margin-bottom: 50px;
+        }
+
+        .form-subtitle {
+            color: #6b7280;
+            font-size: 16px;
+            font-weight: 400;
+            margin-bottom: 10px;
+        }
+
+        .form-title {
+            color: #1f2937;
+            font-size: 34px;
+            font-weight: 600;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+            position: relative;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 34px 50px 14px 18px;
+            border: 1.5px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 16px;
+            font-family: 'Montserrat', sans-serif;
+            color: #1f2937;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+        }
+
+        .form-input::placeholder {
+            color: transparent;
+        }
+
+        .form-label {
+            position: absolute;
+            left: 18px;
+            top: 14px;
+            color: #9ca3af;
+            font-size: 13px;
+            font-weight: 500;
+            pointer-events: none;
+            transition: all 0.3s ease;
+        }
+
+        .input-icon {
+            position: absolute;
+            right: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+        }
+
+        .input-icon svg {
+            width: 100%;
+            height: 100%;
+            stroke: #9ca3af;
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            transition: stroke 0.3s ease;
+        }
+
+        .input-icon:hover svg {
+            stroke: #6b7280;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 18px;
+            background: #2563eb;
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            font-size: 17px;
+            font-weight: 600;
+            font-family: 'Montserrat', sans-serif;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+            margin-top: 8px;
+        }
+
+        .submit-btn:hover {
+            background: #1e40af;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(37, 99, 235, 0.45);
+        }
+
+        /* Bottom links - fixed at bottom */
+        .bottom-links {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 0 80px 50px 80px;
+            width: 100%;
+        }
+
+        .login-link {
+            color: #6b7280;
+            font-size: 15px;
+            margin: 0;
+        }
+
+        .login-link a {
+            color: #2563eb;
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.3s ease;
+        }
+
+        .login-link a:hover {
+            color: #1e40af;
+        }
+
+        /* Right Panel - Image Background */
+        .right-panel {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            background-image: url('/images/login-bg.jpg');
+            background-size: cover;
+            background-position: center;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.7) 0%, rgba(30, 64, 175, 0.8) 100%);
+        }
+
+        .text-danger {
+            color: #dc2626;
+            font-size: 13px;
+            margin-top: 6px;
+            display: block;
+        }
+
+        /* Responsive */
+        @@media (max-width: 1024px) {
+            .right-panel {
+                display: none;
+            }
+        }
+
+        @@media (max-width: 640px) {
+            .left-panel {
+                padding: 40px 30px;
+            }
+
+            .logo {
+                top: 40px;
+                left: 30px;
+                font-size: 28px;
+            }
+
+            .form-container {
+                padding-top: 80px;
+            }
+
+            .form-title {
+                font-size: 28px;
+            }
+
+            .bottom-links {
+                padding: 0 30px 40px 30px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Left Panel - Register Form -->
+        <div class="left-panel">
+            <div class="logo">THE APP</div>
+            
+            <div class="content-wrapper">
+                <div class="form-container">
+                    <div class="form-header">
+                        <p class="form-subtitle">Start your journey</p>
+                        <h1 class="form-title">Register to The App</h1>
                     </div>
-                    
-                    <div class="mb-3">
-                        <label asp-for="Email" class="form-label">Email</label>
-                        <input asp-for="Email" class="form-control" placeholder="Enter your email" />
-                        <span asp-validation-for="Email" class="text-danger"></span>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label asp-for="Password" class="form-label">Password</label>
-                        <input asp-for="Password" type="password" class="form-control" placeholder="Enter your password" />
-                        <span asp-validation-for="Password" class="text-danger"></span>
-                    </div>
-                    
-                    <button type="submit" class="btn btn-success w-100 mb-3">Register</button>
-                    
-                    <div class="text-center">
-                        <p class="mb-0">Already have an account? <a asp-action="Login">Login here</a></p>
-                    </div>
-                </form>
+
+                    <form asp-action="Register" method="post">
+                        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                        
+                        <div class="form-group">
+                            <div class="input-wrapper">
+                                <label class="form-label">Name</label>
+                                <input asp-for="Name" class="form-input" placeholder="Enter your name" />
+                                <span class="input-icon">
+                                    <svg viewBox="0 0 24 24">
+                                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                        <circle cx="12" cy="7" r="4"></circle>
+                                    </svg>
+                                </span>
+                            </div>
+                            <span asp-validation-for="Name" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <div class="input-wrapper">
+                                <label class="form-label">E-mail</label>
+                                <input asp-for="Email" class="form-input" placeholder="test@example.com" />
+                                <span class="input-icon">
+                                    <svg viewBox="0 0 24 24">
+                                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                                        <polyline points="22,6 12,13 2,6"></polyline>
+                                    </svg>
+                                </span>
+                            </div>
+                            <span asp-validation-for="Email" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <div class="input-wrapper">
+                                <label class="form-label">Password</label>
+                                <input asp-for="Password" type="password" class="form-input" id="passwordInput" placeholder="••••••••" />
+                                <span class="input-icon" id="togglePassword">
+                                    <svg viewBox="0 0 24 24" id="eyeIcon">
+                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                        <circle cx="12" cy="12" r="3"></circle>
+                                    </svg>
+                                    <svg viewBox="0 0 24 24" id="eyeOffIcon" style="display: none;">
+                                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                                        <line x1="1" y1="1" x2="23" y2="23"></line>
+                                    </svg>
+                                </span>
+                            </div>
+                            <span asp-validation-for="Password" class="text-danger"></span>
+                        </div>
+
+                        <button type="submit" class="submit-btn">Register</button>
+                    </form>
+                </div>
+
+                <!-- Bottom link fixed at bottom -->
+                <div class="bottom-links">
+                    <p class="login-link">
+                        Already have an account? <a asp-action="Login">Login here</a>
+                    </p>
+                </div>
             </div>
         </div>
-    </div>
-</div>
 
-@section Scripts {
-    <partial name="_ValidationScriptsPartial" />
-}
+        <!-- Right Panel - Background Image -->
+        <div class="right-panel">
+            <div class="overlay"></div>
+        </div>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+    <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
+    
+    <script>
+        // Toggle password visibility
+        document.getElementById('togglePassword').addEventListener('click', function() {
+            const passwordInput = document.getElementById('passwordInput');
+            const eyeIcon = document.getElementById('eyeIcon');
+            const eyeOffIcon = document.getElementById('eyeOffIcon');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                eyeIcon.style.display = 'none';
+                eyeOffIcon.style.display = 'block';
+            } else {
+                passwordInput.type = 'password';
+                eyeIcon.style.display = 'block';
+                eyeOffIcon.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
