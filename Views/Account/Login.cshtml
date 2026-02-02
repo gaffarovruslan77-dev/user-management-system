@@ -193,7 +193,7 @@
         /* Bottom links - fixed at bottom */
         .bottom-links {
             display: flex;
-            justify-content: center;
+            justify-content: space-between;
             align-items: center;
             padding: 0 80px 50px 80px;
             width: 100%;
@@ -213,6 +213,18 @@
         }
 
         .register-link a:hover {
+            color: #1e40af;
+        }
+
+        .forgot-password-link {
+            color: #2563eb;
+            font-size: 15px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.3s ease;
+        }
+
+        .forgot-password-link:hover {
             color: #1e40af;
         }
 
@@ -289,6 +301,8 @@
             }
 
             .bottom-links {
+                flex-direction: column;
+                gap: 15px;
                 padding: 0 30px 40px 30px;
             }
         }
@@ -311,6 +325,13 @@
                     {
                         <div class="alert alert-success">
                             @TempData["Message"]
+                        </div>
+                    }
+
+                    @if (TempData["Error"] != null)
+                    {
+                        <div class="alert alert-danger">
+                            @TempData["Error"]
                         </div>
                     }
 
@@ -365,11 +386,12 @@
                     </form>
                 </div>
 
-                <!-- Bottom link fixed at bottom -->
+                <!-- Bottom links fixed at bottom -->
                 <div class="bottom-links">
                     <p class="register-link">
-                        Don't have an account? <a asp-action="Register">Register here</a>
+                        Don't have an account? <a asp-action="Register">Sign up</a>
                     </p>
+                    <a asp-action="ForgotPassword" class="forgot-password-link">Forgot password?</a>
                 </div>
             </div>
         </div>
