@@ -1,5 +1,4 @@
 using System.ComponentModel.DataAnnotations;
-
 namespace UserManagementApp.Models
 {
     public class User
@@ -21,5 +20,11 @@ namespace UserManagementApp.Models
         public DateTime? LastLoginTime { get; set; }
         
         public bool IsBlocked { get; set; }
+        
+        public bool IsDeleted { get; set; }
+        
+        public bool IsEmailVerified { get; set; }
+        
+        public string? EmailVerificationToken { get; set; }
     }
 }
