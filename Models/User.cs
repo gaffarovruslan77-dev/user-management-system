@@ -26,5 +26,8 @@ namespace UserManagementApp.Models
         public bool IsEmailVerified { get; set; }
         
         public string? EmailVerificationToken { get; set; }
+        
+        // Новое поле для хранения статуса блокировки перед удалением
+        public bool WasBlockedBeforeDelete { get; set; }
     }
 }

@@ -150,12 +150,13 @@
         }
 
         .btn-action {
-            border-color: #ef4444;
-            color: #ef4444;
+            border-color: #6b7280;
+            color: #6b7280;
+            position: relative;
         }
 
         .btn-action:hover {
-            background: #ef4444;
+            background: #6b7280;
             color: #ffffff;
         }
 
@@ -166,6 +167,7 @@
         .filter-box {
             display: flex;
             align-items: center;
+            gap: 10px;
         }
 
         .filter-input {
@@ -174,7 +176,7 @@
             border-radius: 8px;
             font-size: 14px;
             font-family: 'Inter', sans-serif;
-            width: 280px;
+            width: 200px;
             transition: all 0.2s ease;
         }
 
@@ -185,6 +187,23 @@
 
         .filter-input::placeholder {
             color: #9ca3af;
+        }
+
+        .filter-select {
+            padding: 10px 16px;
+            border: 1.5px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: 'Inter', sans-serif;
+            min-width: 150px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: #ffffff;
+        }
+
+        .filter-select:focus {
+            outline: none;
+            border-color: #3b82f6;
         }
 
         .card {
@@ -336,6 +355,142 @@
             opacity: 1;
         }
 
+        /* Dropdown Menu Styles */
+        .dropdown-menu {
+            position: absolute;
+            top: calc(100% + 5px);
+            right: 0;
+            background: #ffffff;
+            border: 1.5px solid #e5e7eb;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            min-width: 180px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.2s ease;
+            z-index: 1000;
+        }
+
+        .dropdown-menu.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .dropdown-item {
+            padding: 10px 16px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 1px solid #f3f4f6;
+            color: #374151;
+        }
+
+        .dropdown-item:last-child {
+            border-bottom: none;
+        }
+
+        .dropdown-item:hover {
+            background: #f9fafb;
+            color: #3b82f6;
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 450px;
+            width: 90%;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-header {
+            margin-bottom: 16px;
+        }
+
+        .modal-header h2 {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+
+        .modal-header p {
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        .btn-cancel {
+            padding: 10px 20px;
+            background: #ffffff;
+            border: 1.5px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-cancel:hover {
+            background: #f9fafb;
+        }
+
+        .btn-confirm {
+            padding: 10px 20px;
+            background: #3b82f6;
+            color: #ffffff;
+            border: 1.5px solid #3b82f6;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-confirm:hover {
+            background: #2563eb;
+        }
+
+        .btn-confirm.danger {
+            background: #ef4444;
+            border-color: #ef4444;
+        }
+
+        .btn-confirm.danger:hover {
+            background: #dc2626;
+        }
+
         /* Responsive */
         @@media (max-width: 768px) {
             .header, .main-content {
@@ -351,7 +506,12 @@
                 flex-wrap: wrap;
             }
 
-            .filter-input {
+            .filter-box {
+                flex-direction: column;
+            }
+
+            .filter-input,
+            .filter-select {
                 width: 100%;
             }
 
@@ -384,37 +544,67 @@
         <!-- Controls Bar -->
         <div class="controls-bar">
             <div class="action-buttons">
-                <button type="button" class="btn btn-block" onclick="submitAction('Block')">
+                <button type="button" class="btn btn-block" onclick="showConfirmModal('Block')">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                         <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                     </svg>
                     Block
                 </button>
-                <button type="button" class="btn btn-unblock" onclick="submitAction('Unblock')">
+                <button type="button" class="btn btn-unblock" onclick="showConfirmModal('Unblock')">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                         <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
                     </svg>
                     Unblock
                 </button>
-                <button type="button" class="btn btn-delete" onclick="submitAction('Delete')">
+                <button type="button" class="btn btn-delete" onclick="showConfirmModal('Delete')">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="3 6 5 6 21 6"></polyline>
                         <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
                     </svg>
                     Delete
                 </button>
-                <button type="button" class="btn btn-action" onclick="alert('Action feature coming soon!')">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="1"></circle>
-                        <circle cx="19" cy="12" r="1"></circle>
-                        <circle cx="5" cy="12" r="1"></circle>
-                    </svg>
-                </button>
+                <div style="position: relative;">
+                    <button type="button" class="btn btn-action" onclick="toggleDropdown()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="1"></circle>
+                            <circle cx="19" cy="12" r="1"></circle>
+                            <circle cx="5" cy="12" r="1"></circle>
+                        </svg>
+                    </button>
+                    <div class="dropdown-menu" id="dropdownMenu">
+                        <div class="dropdown-item" onclick="showConfirmModal('Undelete')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px;">
+                                <polyline points="9 14 4 9 9 4"></polyline>
+                                <path d="M20 20v-7a4 4 0 0 0-4-4H4"></path>
+                            </svg>
+                            Undelete Selected
+                        </div>
+                        <div class="dropdown-item" onclick="showConfirmModal('UndeleteAll')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px;">
+                                <polyline points="23 4 23 10 17 10"></polyline>
+                                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                            </svg>
+                            Undelete All
+                        </div>
+                    </div>
+                </div>
             </div>
             <div class="filter-box">
-                <input type="text" class="filter-input" id="filterInput" placeholder="Filter" onkeyup="filterTable()">
+                <input type="text" class="filter-input" id="filterInput" placeholder="Search..." onkeyup="applyFilters()">
+                <select class="filter-select" id="statusFilter" onchange="applyFilters()">
+                    <option value="all">All Status</option>
+                    <option value="active">Active</option>
+                    <option value="blocked">Blocked</option>
+                    <option value="deleted">Deleted</option>
+                </select>
+                <select class="filter-select" id="lastSeenFilter" onchange="applyFilters()">
+                    <option value="all">All Time</option>
+                    <option value="hour">Last Hour</option>
+                    <option value="day">Last Day</option>
+                    <option value="never">Never</option>
+                </select>
             </div>
         </div>
 
@@ -445,23 +635,30 @@
                                     ? GetTimeAgo(user.LastLoginTime.Value)
                                     : "Never";
 
+                                var lastLoginTimestamp = user.LastLoginTime.HasValue 
+                                    ? user.LastLoginTime.Value.ToString("yyyy-MM-dd HH:mm:ss")
+                                    : "";
+
                                 var rowClass = (user.IsBlocked || user.IsDeleted) ? "dimmed" : "";
                                 
                                 var statusClass = "status-active";
                                 var statusText = "Active";
+                                var statusValue = "active";
                                 
                                 if (user.IsDeleted)
                                 {
                                     statusClass = "status-deleted";
                                     statusText = "Deleted";
+                                    statusValue = "deleted";
                                 }
                                 else if (user.IsBlocked)
                                 {
                                     statusClass = "status-blocked";
                                     statusText = "Blocked";
+                                    statusValue = "blocked";
                                 }
 
-                                <tr class="@rowClass">
+                                <tr class="@rowClass" data-status="@statusValue" data-lastseen="@lastLoginTimestamp" data-was-blocked="@(user.WasBlockedBeforeDelete ? "true" : "false")">
                                     <td>
                                         <input type="checkbox" name="ids" value="@user.Id" class="checkbox user-checkbox" />
                                     </td>
@@ -500,28 +697,374 @@
         </div>
     </div>
 
+    <!-- Modal -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="modalTitle">Confirm Action</h2>
+                <p id="modalMessage">Are you sure you want to perform this action?</p>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" onclick="closeModal()">Cancel</button>
+                <button type="button" class="btn-confirm" id="modalConfirm" onclick="confirmAction()">Confirm</button>
+            </div>
+        </div>
+    </div>
+
     <script>
+        const currentUserId = @ViewBag.CurrentUserId;
+        let currentAction = '';
+
         function toggleSelectAll(source) {
             const checkboxes = document.querySelectorAll('.user-checkbox');
-            checkboxes.forEach(checkbox => checkbox.checked = source.checked);
+            const visibleCheckboxes = Array.from(checkboxes).filter(cb => {
+                const row = cb.closest('tr');
+                return row && row.style.display !== 'none';
+            });
+            visibleCheckboxes.forEach(checkbox => checkbox.checked = source.checked);
         }
 
-        function submitAction(action) {
-            const form = document.getElementById('userForm');
-            const checkedBoxes = document.querySelectorAll('.user-checkbox:checked');
-            
-            if (checkedBoxes.length === 0) {
-                alert('Please select at least one user');
+        function showConfirmModal(action) {
+            currentAction = action;
+            const modal = document.getElementById('modalOverlay');
+            const title = document.getElementById('modalTitle');
+            const message = document.getElementById('modalMessage');
+            const confirmBtn = document.getElementById('modalConfirm');
+
+            if (action === 'UndeleteAll') {
+                // Проверяем есть ли удалённые пользователи
+                const allRows = document.querySelectorAll('tbody tr');
+                let deletedCount = 0;
+                
+                allRows.forEach(row => {
+                    if (row.style.display !== 'none' && row.getAttribute('data-status') === 'deleted') {
+                        deletedCount++;
+                    }
+                });
+                
+                if (deletedCount === 0) {
+                    title.textContent = 'Warning';
+                    message.textContent = 'There are no deleted users to restore';
+                    confirmBtn.style.display = 'none';
+                    modal.classList.add('active');
+                    return;
+                }
+                
+                title.textContent = 'Undelete All Users';
+                message.textContent = `Are you sure you want to restore ${deletedCount} deleted user(s)?`;
+                confirmBtn.className = 'btn-confirm';
+                confirmBtn.style.display = 'inline-block';
+                modal.classList.add('active');
                 return;
             }
 
-            form.action = '/Users/' + action;
+            const checkedBoxes = document.querySelectorAll('.user-checkbox:checked');
+            
+            if (checkedBoxes.length === 0) {
+                title.textContent = 'Warning';
+                message.textContent = 'Please select at least one user';
+                confirmBtn.style.display = 'none';
+                modal.classList.add('active');
+                return;
+            }
+
+            // Проверка статусов выбранных пользователей
+            let validUsers = 0;
+            let alreadyInStatus = 0;
+            let includingCurrentUser = false;
+            let currentUserCanBeProcessed = false;
+            let hasDeletedUsers = false;
+            let hasBlockedBeforeDelete = false;
+            
+            checkedBoxes.forEach(checkbox => {
+                const row = checkbox.closest('tr');
+                const status = row.getAttribute('data-status');
+                const userId = parseInt(checkbox.value);
+                const wasBlocked = row.hasAttribute('data-was-blocked') && row.getAttribute('data-was-blocked') === 'true';
+                
+                if (userId === currentUserId) {
+                    includingCurrentUser = true;
+                    // Проверяем, может ли текущий пользователь быть обработан для данного действия
+                    if (action === 'Delete' && status !== 'deleted') {
+                        currentUserCanBeProcessed = true;
+                    } else if (action === 'Unblock' && status === 'blocked') {
+                        currentUserCanBeProcessed = true;
+                    } else if (action === 'Undelete' && status === 'deleted') {
+                        currentUserCanBeProcessed = true;
+                    }
+                }
+                
+                if (action === 'Block') {
+                    // Нельзя блокировать deleted пользователей
+                    if (status === 'deleted') {
+                        hasDeletedUsers = true;
+                        return;
+                    }
+                    // Текущий пользователь не может заблокировать себя
+                    if (userId === currentUserId) {
+                        return; // пропускаем
+                    }
+                    if (status === 'active') {
+                        validUsers++;
+                    } else if (status === 'blocked') {
+                        alreadyInStatus++;
+                    }
+                } else if (action === 'Unblock' && status === 'blocked') {
+                    validUsers++;
+                } else if (action === 'Unblock' && status === 'active') {
+                    alreadyInStatus++;
+                } else if (action === 'Delete' && status !== 'deleted') {
+                    validUsers++;
+                } else if (action === 'Delete' && status === 'deleted') {
+                    alreadyInStatus++;
+                } else if (action === 'Undelete' && status === 'deleted') {
+                    validUsers++;
+                    if (wasBlocked) {
+                        hasBlockedBeforeDelete = true;
+                    }
+                } else if (action === 'Undelete' && status !== 'deleted') {
+                    alreadyInStatus++;
+                }
+            });
+
+            // Проверка для Block - если есть deleted пользователи
+            if (action === 'Block' && hasDeletedUsers) {
+                title.textContent = 'Warning';
+                message.textContent = 'Cannot block deleted users. Please undelete them first.';
+                confirmBtn.style.display = 'none';
+                modal.classList.add('active');
+                return;
+            }
+
+            // Специальная проверка для Block - если выбран текущий пользователь
+            if (action === 'Block' && includingCurrentUser) {
+                if (validUsers === 0) {
+                    // Пытается заблокировать только себя
+                    title.textContent = 'Warning';
+                    message.textContent = 'You cannot block yourself';
+                    confirmBtn.style.display = 'none';
+                    modal.classList.add('active');
+                } else {
+                    // Выбрал себя + других - показываем предупреждение, но с возможностью продолжить
+                    title.textContent = 'Warning';
+                    message.textContent = `You cannot block yourself. Do you want to block ${validUsers} other user(s)?`;
+                    confirmBtn.style.display = 'inline-block';
+                    confirmBtn.className = 'btn-confirm';
+                    modal.classList.add('active');
+                }
+                return;
+            }
+
+            // Если все пользователи уже в нужном статусе
+            if (validUsers === 0 && alreadyInStatus > 0) {
+                let statusText = '';
+                switch(action) {
+                    case 'Block': statusText = 'blocked'; break;
+                    case 'Unblock': statusText = 'active'; break;
+                    case 'Delete': statusText = 'deleted'; break;
+                    case 'Undelete': statusText = 'not deleted'; break;
+                }
+                title.textContent = 'Warning';
+                message.textContent = `Selected user(s) are already ${statusText}`;
+                confirmBtn.style.display = 'none';
+                modal.classList.add('active');
+                return;
+            }
+
+            // Показать нормальное подтверждение
+            confirmBtn.style.display = 'inline-block';
+
+            switch(action) {
+                case 'Block':
+                    title.textContent = 'Block Users';
+                    message.textContent = `Are you sure you want to block ${validUsers} user(s)?`;
+                    confirmBtn.className = 'btn-confirm';
+                    break;
+                case 'Unblock':
+                    title.textContent = 'Unblock Users';
+                    message.textContent = `Are you sure you want to unblock ${validUsers} user(s)?`;
+                    confirmBtn.className = 'btn-confirm';
+                    break;
+                case 'Delete':
+                    title.textContent = 'Delete Users';
+                    if (includingCurrentUser && currentUserCanBeProcessed) {
+                        message.textContent = `⚠️ WARNING: You are about to delete your own account! You will be logged out immediately. Are you sure you want to delete ${validUsers} user(s) including yourself?`;
+                        confirmBtn.setAttribute('data-delete-self', 'true');
+                    } else {
+                        message.textContent = `Are you sure you want to delete ${validUsers} user(s)?`;
+                        confirmBtn.removeAttribute('data-delete-self');
+                    }
+                    confirmBtn.className = 'btn-confirm danger';
+                    break;
+                case 'Undelete':
+                    title.textContent = 'Undelete Users';
+                    message.textContent = `Are you sure you want to restore ${validUsers} user(s)?`;
+                    confirmBtn.className = 'btn-confirm';
+                    break;
+            }
+
+            modal.classList.add('active');
+            closeDropdown();
+        }
+
+        function closeModal() {
+            document.getElementById('modalOverlay').classList.remove('active');
+            currentAction = '';
+            
+            // Очищаем атрибуты
+            const confirmBtn = document.getElementById('modalConfirm');
+            confirmBtn.removeAttribute('data-delete-self');
+            confirmBtn.removeAttribute('data-final-delete');
+            confirmBtn.onclick = confirmAction;
+            
+            // Восстанавливаем текст кнопки Cancel
+            const cancelBtn = document.querySelector('.btn-cancel');
+            cancelBtn.textContent = 'Cancel';
+            cancelBtn.onclick = closeModal;
+        }
+
+        function confirmAction() {
+            const form = document.getElementById('userForm');
+            const confirmBtn = document.getElementById('modalConfirm');
+            
+            // Проверяем, удаляет ли пользователь сам себя
+            if (currentAction === 'Delete' && confirmBtn.hasAttribute('data-delete-self')) {
+                // Закрываем первое модальное окно
+                closeModal();
+                
+                // Показываем второе финальное предупреждение
+                setTimeout(() => {
+                    const modal = document.getElementById('modalOverlay');
+                    const title = document.getElementById('modalTitle');
+                    const message = document.getElementById('modalMessage');
+                    const newConfirmBtn = document.getElementById('modalConfirm');
+                    
+                    title.textContent = '⚠️ FINAL WARNING';
+                    message.textContent = 'This is your last chance! Are you absolutely sure you want to delete your account? This action will log you out immediately!';
+                    newConfirmBtn.style.display = 'inline-block';
+                    newConfirmBtn.className = 'btn-confirm danger';
+                    newConfirmBtn.setAttribute('data-final-delete', 'true');
+                    newConfirmBtn.removeAttribute('data-delete-self');
+                    
+                    newConfirmBtn.onclick = function() {
+                        form.action = '/Users/Delete';
+                        form.submit();
+                    };
+                    
+                    modal.classList.add('active');
+                }, 100);
+                return;
+            }
+            
+            // Для Undelete нужно добавить параметр unblockAll
+            if (currentAction === 'Undelete') {
+                // Проверяем есть ли заблокированные пользователи среди выбранных
+                const checkedBoxes = document.querySelectorAll('.user-checkbox:checked');
+                let hasBlockedUsers = false;
+                
+                checkedBoxes.forEach(checkbox => {
+                    const row = checkbox.closest('tr');
+                    if (row && row.hasAttribute('data-was-blocked') && row.getAttribute('data-was-blocked') === 'true') {
+                        hasBlockedUsers = true;
+                    }
+                });
+                
+                if (hasBlockedUsers) {
+                    // Закрываем текущее модальное окно
+                    closeModal();
+                    
+                    // Показываем новое модальное окно с выбором
+                    setTimeout(() => {
+                        const modal = document.getElementById('modalOverlay');
+                        const title = document.getElementById('modalTitle');
+                        const message = document.getElementById('modalMessage');
+                        const newConfirmBtn = document.getElementById('modalConfirm');
+                        
+                        title.textContent = 'Unblock Users?';
+                        message.textContent = 'Some users were blocked before deletion. Do you want to unblock them?';
+                        newConfirmBtn.style.display = 'inline-block';
+                        newConfirmBtn.className = 'btn-confirm';
+                        newConfirmBtn.removeAttribute('data-delete-self');
+                        newConfirmBtn.removeAttribute('data-final-delete');
+                        
+                        newConfirmBtn.onclick = function() {
+                            const hiddenInput = document.createElement('input');
+                            hiddenInput.type = 'hidden';
+                            hiddenInput.name = 'unblockAll';
+                            hiddenInput.value = 'true';
+                            form.appendChild(hiddenInput);
+                            
+                            form.action = '/Users/Undelete';
+                            form.submit();
+                        };
+                        
+                        // Изменяем кнопку Cancel на "No, keep blocked"
+                        const cancelBtn = document.querySelector('.btn-cancel');
+                        cancelBtn.textContent = 'No, keep blocked';
+                        cancelBtn.onclick = function() {
+                            form.action = '/Users/Undelete';
+                            form.submit();
+                        };
+                        
+                        modal.classList.add('active');
+                    }, 100);
+                    return;
+                }
+            }
+            
+            form.action = '/Users/' + currentAction;
             form.submit();
         }
 
-        function filterTable() {
-            const input = document.getElementById('filterInput');
-            const filter = input.value.toUpperCase();
+        function toggleDropdown() {
+            const dropdown = document.getElementById('dropdownMenu');
+            dropdown.classList.toggle('active');
+        }
+
+        function closeDropdown() {
+            document.getElementById('dropdownMenu').classList.remove('active');
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            const dropdown = document.getElementById('dropdownMenu');
+            const button = event.target.closest('.btn-action');
+            
+            if (!button && !dropdown.contains(event.target)) {
+                closeDropdown();
+            }
+        });
+
+        // Close modal when clicking outside
+        document.getElementById('modalOverlay').addEventListener('click', function(event) {
+            if (event.target === this) {
+                closeModal();
+            }
+        });
+
+        // Обработка нажатия Enter в модальном окне
+        document.addEventListener('keydown', function(event) {
+            const modal = document.getElementById('modalOverlay');
+            const confirmBtn = document.getElementById('modalConfirm');
+            
+            if (event.key === 'Enter' && modal.classList.contains('active')) {
+                // Проверяем, не является ли это удалением самого себя
+                if (confirmBtn.hasAttribute('data-delete-self')) {
+                    // Для удаления себя Enter не работает
+                    return;
+                }
+                
+                // Если кнопка Confirm видна, нажимаем её
+                if (confirmBtn.style.display !== 'none') {
+                    confirmBtn.click();
+                }
+            }
+        });
+
+        function applyFilters() {
+            const searchInput = document.getElementById('filterInput').value.toUpperCase();
+            const statusFilter = document.getElementById('statusFilter').value;
+            const lastSeenFilter = document.getElementById('lastSeenFilter').value;
             const table = document.getElementById('usersTable');
             const rows = table.getElementsByTagName('tr');
 
@@ -529,19 +1072,59 @@
                 const row = rows[i];
                 const nameCell = row.getElementsByTagName('td')[1];
                 const emailCell = row.getElementsByTagName('td')[2];
+                const status = row.getAttribute('data-status');
+                const lastSeenTimestamp = row.getAttribute('data-lastseen');
                 
-                if (nameCell && emailCell) {
+                if (!nameCell || !emailCell) continue;
+
+                let showRow = true;
+
+                // Search filter
+                if (searchInput) {
                     const nameText = nameCell.textContent || nameCell.innerText;
                     const emailText = emailCell.textContent || emailCell.innerText;
                     
-                    if (nameText.toUpperCase().indexOf(filter) > -1 || 
-                        emailText.toUpperCase().indexOf(filter) > -1) {
-                        row.style.display = '';
-                    } else {
-                        row.style.display = 'none';
+                    if (nameText.toUpperCase().indexOf(searchInput) === -1 && 
+                        emailText.toUpperCase().indexOf(searchInput) === -1) {
+                        showRow = false;
                     }
                 }
+
+                // Status filter
+                if (showRow && statusFilter !== 'all') {
+                    if (status !== statusFilter) {
+                        showRow = false;
+                    }
+                }
+
+                // Last seen filter
+                if (showRow && lastSeenFilter !== 'all') {
+                    if (lastSeenFilter === 'never') {
+                        if (lastSeenTimestamp !== '') {
+                            showRow = false;
+                        }
+                    } else if (lastSeenTimestamp === '') {
+                        showRow = false;
+                    } else {
+                        const lastSeenDate = new Date(lastSeenTimestamp);
+                        const now = new Date();
+                        const diffMs = now - lastSeenDate;
+                        const diffMins = diffMs / 1000 / 60;
+                        const diffHours = diffMins / 60;
+
+                        if (lastSeenFilter === 'hour' && diffHours > 1) {
+                            showRow = false;
+                        } else if (lastSeenFilter === 'day' && diffHours > 24) {
+                            showRow = false;
+                        }
+                    }
+                }
+
+                row.style.display = showRow ? '' : 'none';
             }
+
+            // Uncheck "select all" if any filtered rows
+            document.getElementById('selectAll').checked = false;
         }
     </script>
 </body>
