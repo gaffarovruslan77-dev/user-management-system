@@ -38,6 +38,7 @@ namespace UserManagementApp.Controllers
                 Name = model.Name,
                 Email = model.Email,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(model.Password),
+                Organization = string.IsNullOrWhiteSpace(model.Organization) ? null : model.Organization,
                 RegistrationTime = DateTime.UtcNow.AddHours(5), // Tashkent timezone (UTC+5)
                 IsBlocked = false,
                 IsDeleted = false,

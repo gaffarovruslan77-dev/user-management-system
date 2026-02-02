@@ -8,7 +8,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign In - The App</title>
+    <title>Login - The App</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         * {
@@ -147,23 +147,24 @@
             stroke: #6b7280;
         }
 
-        .checkbox-wrapper {
+        .remember-me {
             display: flex;
             align-items: center;
             gap: 10px;
-            margin-bottom: 28px;
+            margin-bottom: 24px;
         }
 
-        .checkbox-wrapper input[type="checkbox"] {
+        .remember-me input[type="checkbox"] {
             width: 18px;
             height: 18px;
             cursor: pointer;
             accent-color: #2563eb;
         }
 
-        .checkbox-label {
-            color: #1f2937;
-            font-size: 15px;
+        .remember-me label {
+            color: #374151;
+            font-size: 14px;
+            font-weight: 500;
             cursor: pointer;
             user-select: none;
         }
@@ -192,38 +193,26 @@
         /* Bottom links - fixed at bottom */
         .bottom-links {
             display: flex;
-            justify-content: space-between;
+            justify-content: center;
             align-items: center;
             padding: 0 80px 50px 80px;
             width: 100%;
         }
 
-        .signup-link {
+        .register-link {
             color: #6b7280;
             font-size: 15px;
             margin: 0;
         }
 
-        .signup-link a {
+        .register-link a {
             color: #2563eb;
             text-decoration: none;
             font-weight: 600;
             transition: color 0.3s ease;
         }
 
-        .signup-link a:hover {
-            color: #1e40af;
-        }
-
-        .forgot-link {
-            color: #2563eb;
-            text-decoration: none;
-            font-size: 15px;
-            font-weight: 500;
-            transition: color 0.3s ease;
-        }
-
-        .forgot-link:hover {
+        .register-link a:hover {
             color: #1e40af;
         }
 
@@ -253,6 +242,26 @@
             display: block;
         }
 
+        .alert {
+            padding: 14px 18px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .alert-success {
+            background: #f0fdf4;
+            color: #16a34a;
+            border: 1px solid #bbf7d0;
+        }
+
+        .alert-danger {
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+        }
+
         /* Responsive */
         @@media (max-width: 1024px) {
             .right-panel {
@@ -280,9 +289,6 @@
             }
 
             .bottom-links {
-                flex-direction: column;
-                gap: 14px;
-                align-items: flex-start;
                 padding: 0 30px 40px 30px;
             }
         }
@@ -301,13 +307,27 @@
                         <h1 class="form-title">Sign In to The App</h1>
                     </div>
 
-                    <form asp-action="Login" method="post">
+                    @if (TempData["Message"] != null)
+                    {
+                        <div class="alert alert-success">
+                            @TempData["Message"]
+                        </div>
+                    }
+
+                    @if (ViewBag.ErrorMessage != null)
+                    {
+                        <div class="alert alert-danger">
+                            @ViewBag.ErrorMessage
+                        </div>
+                    }
+
+                    <form asp-action="Login" method="post" id="loginForm">
                         <div asp-validation-summary="ModelOnly" class="text-danger"></div>
                         
                         <div class="form-group">
                             <div class="input-wrapper">
                                 <label class="form-label">E-mail</label>
-                                <input asp-for="Email" class="form-input" placeholder="test@example.com" />
+                                <input asp-for="Email" class="form-input" id="emailInput" placeholder="test@example.com" />
                                 <span class="input-icon">
                                     <svg viewBox="0 0 24 24">
                                         <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
@@ -336,21 +356,20 @@
                             <span asp-validation-for="Password" class="text-danger"></span>
                         </div>
 
-                        <div class="checkbox-wrapper">
-                            <input type="checkbox" id="remember" name="RememberMe">
-                            <label class="checkbox-label" for="remember">Remember me</label>
+                        <div class="remember-me">
+                            <input type="checkbox" id="rememberMe" name="RememberMe" />
+                            <label for="rememberMe">Remember me</label>
                         </div>
 
                         <button type="submit" class="submit-btn">Sign In</button>
                     </form>
                 </div>
 
-                <!-- Bottom links fixed at bottom -->
+                <!-- Bottom link fixed at bottom -->
                 <div class="bottom-links">
-                    <p class="signup-link">
-                        Don't have an account? <a asp-action="Register">Sign up</a>
+                    <p class="register-link">
+                        Don't have an account? <a asp-action="Register">Register here</a>
                     </p>
-                    <a href="#" class="forgot-link">Forgot password?</a>
                 </div>
             </div>
         </div>
@@ -380,6 +399,58 @@
                 passwordInput.type = 'password';
                 eyeIcon.style.display = 'block';
                 eyeOffIcon.style.display = 'none';
+            }
+        });
+
+        // Remember Me functionality
+        function setCookie(name, value, days) {
+            const expires = new Date();
+            expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 1000));
+            document.cookie = name + '=' + encodeURIComponent(value) + ';expires=' + expires.toUTCString() + ';path=/';
+        }
+
+        function getCookie(name) {
+            const nameEQ = name + '=';
+            const ca = document.cookie.split(';');
+            for (let i = 0; i < ca.length; i++) {
+                let c = ca[i];
+                while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+                if (c.indexOf(nameEQ) === 0) return decodeURIComponent(c.substring(nameEQ.length, c.length));
+            }
+            return null;
+        }
+
+        function deleteCookie(name) {
+            document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:01 GMT;path=/';
+        }
+
+        // Load saved credentials on page load
+        window.addEventListener('DOMContentLoaded', function() {
+            const savedEmail = getCookie('rememberedEmail');
+            const savedPassword = getCookie('rememberedPassword');
+            const rememberMeChecked = getCookie('rememberMeChecked');
+
+            if (rememberMeChecked === 'true' && savedEmail && savedPassword) {
+                document.getElementById('emailInput').value = savedEmail;
+                document.getElementById('passwordInput').value = savedPassword;
+                document.getElementById('rememberMe').checked = true;
+            }
+        });
+
+        // Save credentials on form submit
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            const rememberMe = document.getElementById('rememberMe').checked;
+            const email = document.getElementById('emailInput').value;
+            const password = document.getElementById('passwordInput').value;
+
+            if (rememberMe) {
+                setCookie('rememberedEmail', email, 30); // 30 days
+                setCookie('rememberedPassword', password, 30);
+                setCookie('rememberMeChecked', 'true', 30);
+            } else {
+                deleteCookie('rememberedEmail');
+                deleteCookie('rememberedPassword');
+                deleteCookie('rememberMeChecked');
             }
         });
     </script>

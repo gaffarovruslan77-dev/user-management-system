@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using UserManagementApp.Data;
+using UserManagementApp.Models;
 
 namespace UserManagementApp.Controllers
 {
@@ -26,7 +27,20 @@ namespace UserManagementApp.Controllers
                 return RedirectToAction("Login", "Account");
             }
 
-            var allUsers = await _context.Users.ToListAsync();
+            var allUsers = await _context.Users
+                .Select(u => new UserListViewModel
+                {
+                    Id = u.Id,
+                    Name = u.Name,
+                    Email = u.Email,
+                    Organization = string.IsNullOrWhiteSpace(u.Organization) ? "N/A" : u.Organization,
+                    RegistrationTime = u.RegistrationTime,
+                    LastLoginTime = u.LastLoginTime,
+                    IsBlocked = u.IsBlocked,
+                    IsDeleted = u.IsDeleted,
+                    WasBlockedBeforeDelete = u.WasBlockedBeforeDelete
+                })
+                .ToListAsync();
             
             // Сортировка: текущий пользователь первый, затем остальные по статусу и алфавиту
             var sortedUsers = allUsers
@@ -41,7 +55,7 @@ namespace UserManagementApp.Controllers
             return View(sortedUsers);
         }
 
-        private int GetStatusOrder(UserManagementApp.Models.User user)
+        private int GetStatusOrder(UserListViewModel user)
         {
             if (user.IsDeleted) return 3;
             if (user.IsBlocked) return 2;

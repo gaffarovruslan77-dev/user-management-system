@@ -1,4 +1,4 @@
-@model IEnumerable<UserManagementApp.Models.User>
+@model IEnumerable<UserManagementApp.Models.UserListViewModel>
 @{
     ViewData["Title"] = "Users Management";
     Layout = null;
@@ -665,7 +665,7 @@
                                     <td>
                                         <div class="user-info">
                                             <span class="user-name">@user.Name</span>
-                                            <span class="user-meta">N/A</span>
+                                            <span class="user-meta">@user.Organization</span>
                                         </div>
                                     </td>
                                     <td>@user.Email</td>
@@ -732,7 +732,6 @@
             const confirmBtn = document.getElementById('modalConfirm');
 
             if (action === 'UndeleteAll') {
-                // Проверяем есть ли удалённые пользователи
                 const allRows = document.querySelectorAll('tbody tr');
                 let deletedCount = 0;
                 
@@ -768,7 +767,6 @@
                 return;
             }
 
-            // Проверка статусов выбранных пользователей
             let validUsers = 0;
             let alreadyInStatus = 0;
             let includingCurrentUser = false;
@@ -784,7 +782,6 @@
                 
                 if (userId === currentUserId) {
                     includingCurrentUser = true;
-                    // Проверяем, может ли текущий пользователь быть обработан для данного действия
                     if (action === 'Delete' && status !== 'deleted') {
                         currentUserCanBeProcessed = true;
                     } else if (action === 'Unblock' && status === 'blocked') {
@@ -795,14 +792,12 @@
                 }
                 
                 if (action === 'Block') {
-                    // Нельзя блокировать deleted пользователей
                     if (status === 'deleted') {
                         hasDeletedUsers = true;
                         return;
                     }
-                    // Текущий пользователь не может заблокировать себя
                     if (userId === currentUserId) {
-                        return; // пропускаем
+                        return;
                     }
                     if (status === 'active') {
                         validUsers++;
@@ -827,7 +822,6 @@
                 }
             });
 
-            // Проверка для Block - если есть deleted пользователи
             if (action === 'Block' && hasDeletedUsers) {
                 title.textContent = 'Warning';
                 message.textContent = 'Cannot block deleted users. Please undelete them first.';
@@ -836,16 +830,13 @@
                 return;
             }
 
-            // Специальная проверка для Block - если выбран текущий пользователь
             if (action === 'Block' && includingCurrentUser) {
                 if (validUsers === 0) {
-                    // Пытается заблокировать только себя
                     title.textContent = 'Warning';
                     message.textContent = 'You cannot block yourself';
                     confirmBtn.style.display = 'none';
                     modal.classList.add('active');
                 } else {
-                    // Выбрал себя + других - показываем предупреждение, но с возможностью продолжить
                     title.textContent = 'Warning';
                     message.textContent = `You cannot block yourself. Do you want to block ${validUsers} other user(s)?`;
                     confirmBtn.style.display = 'inline-block';
@@ -855,7 +846,6 @@
                 return;
             }
 
-            // Если все пользователи уже в нужном статусе
             if (validUsers === 0 && alreadyInStatus > 0) {
                 let statusText = '';
                 switch(action) {
@@ -871,7 +861,6 @@
                 return;
             }
 
-            // Показать нормальное подтверждение
             confirmBtn.style.display = 'inline-block';
 
             switch(action) {
@@ -911,13 +900,11 @@
             document.getElementById('modalOverlay').classList.remove('active');
             currentAction = '';
             
-            // Очищаем атрибуты
             const confirmBtn = document.getElementById('modalConfirm');
             confirmBtn.removeAttribute('data-delete-self');
             confirmBtn.removeAttribute('data-final-delete');
             confirmBtn.onclick = confirmAction;
             
-            // Восстанавливаем текст кнопки Cancel
             const cancelBtn = document.querySelector('.btn-cancel');
             cancelBtn.textContent = 'Cancel';
             cancelBtn.onclick = closeModal;
@@ -927,12 +914,9 @@
             const form = document.getElementById('userForm');
             const confirmBtn = document.getElementById('modalConfirm');
             
-            // Проверяем, удаляет ли пользователь сам себя
             if (currentAction === 'Delete' && confirmBtn.hasAttribute('data-delete-self')) {
-                // Закрываем первое модальное окно
                 closeModal();
                 
-                // Показываем второе финальное предупреждение
                 setTimeout(() => {
                     const modal = document.getElementById('modalOverlay');
                     const title = document.getElementById('modalTitle');
@@ -956,9 +940,7 @@
                 return;
             }
             
-            // Для Undelete нужно добавить параметр unblockAll
             if (currentAction === 'Undelete') {
-                // Проверяем есть ли заблокированные пользователи среди выбранных
                 const checkedBoxes = document.querySelectorAll('.user-checkbox:checked');
                 let hasBlockedUsers = false;
                 
@@ -970,10 +952,8 @@
                 });
                 
                 if (hasBlockedUsers) {
-                    // Закрываем текущее модальное окно
                     closeModal();
                     
-                    // Показываем новое модальное окно с выбором
                     setTimeout(() => {
                         const modal = document.getElementById('modalOverlay');
                         const title = document.getElementById('modalTitle');
@@ -998,7 +978,6 @@
                             form.submit();
                         };
                         
-                        // Изменяем кнопку Cancel на "No, keep blocked"
                         const cancelBtn = document.querySelector('.btn-cancel');
                         cancelBtn.textContent = 'No, keep blocked';
                         cancelBtn.onclick = function() {
@@ -1025,7 +1004,6 @@
             document.getElementById('dropdownMenu').classList.remove('active');
         }
 
-        // Close dropdown when clicking outside
         document.addEventListener('click', function(event) {
             const dropdown = document.getElementById('dropdownMenu');
             const button = event.target.closest('.btn-action');
@@ -1035,26 +1013,21 @@
             }
         });
 
-        // Close modal when clicking outside
         document.getElementById('modalOverlay').addEventListener('click', function(event) {
             if (event.target === this) {
                 closeModal();
             }
         });
 
-        // Обработка нажатия Enter в модальном окне
         document.addEventListener('keydown', function(event) {
             const modal = document.getElementById('modalOverlay');
             const confirmBtn = document.getElementById('modalConfirm');
             
             if (event.key === 'Enter' && modal.classList.contains('active')) {
-                // Проверяем, не является ли это удалением самого себя
                 if (confirmBtn.hasAttribute('data-delete-self')) {
-                    // Для удаления себя Enter не работает
                     return;
                 }
                 
-                // Если кнопка Confirm видна, нажимаем её
                 if (confirmBtn.style.display !== 'none') {
                     confirmBtn.click();
                 }
@@ -1079,7 +1052,6 @@
 
                 let showRow = true;
 
-                // Search filter
                 if (searchInput) {
                     const nameText = nameCell.textContent || nameCell.innerText;
                     const emailText = emailCell.textContent || emailCell.innerText;
@@ -1090,14 +1062,12 @@
                     }
                 }
 
-                // Status filter
                 if (showRow && statusFilter !== 'all') {
                     if (status !== statusFilter) {
                         showRow = false;
                     }
                 }
 
-                // Last seen filter
                 if (showRow && lastSeenFilter !== 'all') {
                     if (lastSeenFilter === 'never') {
                         if (lastSeenTimestamp !== '') {
@@ -1123,7 +1093,6 @@
                 row.style.display = showRow ? '' : 'none';
             }
 
-            // Uncheck "select all" if any filtered rows
             document.getElementById('selectAll').checked = false;
         }
     </script>
@@ -1133,7 +1102,6 @@
 @functions {
     private string GetTimeAgo(DateTime dateTime)
     {
-        // Current time in Tashkent (UTC+5)
         var now = DateTime.UtcNow.AddHours(5);
         var span = now - dateTime;
         

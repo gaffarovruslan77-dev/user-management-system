@@ -38,6 +38,7 @@
             position: relative;
             background: #ffffff;
             padding: 80px;
+            overflow-y: auto;
         }
 
         .logo {
@@ -120,6 +121,11 @@
             font-weight: 500;
             pointer-events: none;
             transition: all 0.3s ease;
+        }
+
+        .form-label .optional {
+            color: #d1d5db;
+            font-weight: 400;
         }
 
         .input-icon {
@@ -313,6 +319,22 @@
                                 </span>
                             </div>
                             <span asp-validation-for="Password" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <div class="input-wrapper">
+                                <label class="form-label">Organization <span class="optional">(Optional)</span></label>
+                                <input asp-for="Organization" class="form-input" placeholder="Your organization" />
+                                <span class="input-icon">
+                                    <svg viewBox="0 0 24 24">
+                                        <rect x="3" y="3" width="7" height="7"></rect>
+                                        <rect x="14" y="3" width="7" height="7"></rect>
+                                        <rect x="14" y="14" width="7" height="7"></rect>
+                                        <rect x="3" y="14" width="7" height="7"></rect>
+                                    </svg>
+                                </span>
+                            </div>
+                            <span asp-validation-for="Organization" class="text-danger"></span>
                         </div>
 
                         <button type="submit" class="submit-btn">Register</button>

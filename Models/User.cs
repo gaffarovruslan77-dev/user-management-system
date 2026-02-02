@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+
 namespace UserManagementApp.Models
 {
     public class User
@@ -14,6 +15,9 @@ namespace UserManagementApp.Models
         
         [Required]
         public string PasswordHash { get; set; } = string.Empty;
+        
+        [StringLength(200)]
+        public string? Organization { get; set; }
         
         public DateTime RegistrationTime { get; set; }
         
