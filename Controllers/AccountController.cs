@@ -3,225 +3,292 @@ using Microsoft.EntityFrameworkCore;
 using UserManagementApp.Data;
 using UserManagementApp.Models;
 using UserManagementApp.Services;
-using BCrypt.Net;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 
-namespace UserManagementApp.Controllers
+namespace UserManagementApp.Controllers;
+
+public class AccountController : Controller
 {
-    public class AccountController : Controller
+    private readonly ApplicationDbContext _context;
+    private readonly EmailService _emailService;
+    private readonly ILogger<AccountController> _logger;
+
+    public AccountController(ApplicationDbContext context, EmailService emailService, ILogger<AccountController> logger)
     {
-        private readonly ApplicationDbContext _context;
-        private readonly EmailService _emailService;
+        _context = context;
+        _emailService = emailService;
+        _logger = logger;
+    }
 
-        public AccountController(ApplicationDbContext context, EmailService emailService)
+    [HttpGet]
+    public IActionResult Register()
+    {
+        if (User.Identity?.IsAuthenticated == true)
         {
-            _context = context;
-            _emailService = emailService;
-        }
-
-        [HttpGet]
-        public IActionResult Register()
-        {
-            return View();
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> Register(RegisterViewModel model)
-        {
-            if (!ModelState.IsValid)
-                return View(model);
-
-            if (await _context.Users.AnyAsync(u => u.Email == model.Email))
-            {
-                ModelState.AddModelError("Email", "Email already exists");
-                return View(model);
-            }
-
-            var user = new User
-            {
-                Name = model.Name,
-                Email = model.Email,
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(model.Password),
-                Organization = string.IsNullOrWhiteSpace(model.Organization) ? null : model.Organization,
-                RegistrationTime = DateTime.UtcNow.AddHours(5),
-                IsBlocked = false,
-                IsDeleted = false,
-                IsEmailVerified = true,
-                EmailVerificationToken = null
-            };
-
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
-
-            TempData["Message"] = "Registration successful! You can now login.";
-            return RedirectToAction("Login");
-        }
-
-        [HttpGet]
-        public IActionResult Login()
-        {
-            return View();
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> Login(LoginViewModel model)
-        {
-            if (!ModelState.IsValid)
-                return View(model);
-
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == model.Email);
-
-            if (user == null || !BCrypt.Net.BCrypt.Verify(model.Password, user.PasswordHash))
-            {
-                ModelState.AddModelError(string.Empty, "Invalid email or password");
-                return View(model);
-            }
-
-            if (user.IsBlocked)
-            {
-                ModelState.AddModelError(string.Empty, "Your account has been blocked");
-                return View(model);
-            }
-
-            if (user.IsDeleted)
-            {
-                ModelState.AddModelError(string.Empty, "Your account has been deleted");
-                return View(model);
-            }
-
-            user.LastLoginTime = DateTime.UtcNow.AddHours(5);
-            await _context.SaveChangesAsync();
-
-            HttpContext.Session.SetInt32("UserId", user.Id);
-            HttpContext.Session.SetString("UserEmail", user.Email);
-
             return RedirectToAction("Index", "Users");
         }
+        return View();
+    }
 
-        [HttpGet]
-        public IActionResult ForgotPassword()
+    [HttpPost]
+    public async Task<IActionResult> Register(RegisterViewModel model)
+    {
+        if (!ModelState.IsValid)
         {
-            return View();
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> ForgotPassword(ForgotPasswordViewModel model)
-        {
-            if (!ModelState.IsValid)
-                return View(model);
-
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == model.Email);
-
-            if (user == null)
-            {
-                TempData["Message"] = "If your email exists in our system, you will receive a password reset link shortly.";
-                return RedirectToAction("Login");
-            }
-
-            if (user.IsDeleted)
-            {
-                ModelState.AddModelError(string.Empty, "This account has been deleted");
-                return View(model);
-            }
-
-            // Генерируем токен восстановления
-            user.PasswordResetToken = Guid.NewGuid().ToString();
-            user.PasswordResetTokenExpiry = DateTime.UtcNow.AddHours(6); // UTC+5 = 6 hours from UTC
-
-            await _context.SaveChangesAsync();
-
-            // Формируем ссылку для восстановления
-            var resetUrl = Url.Action("ResetPassword", "Account", 
-                new { token = user.PasswordResetToken }, 
-                Request.Scheme);
-
-            // ============================================================
-            // ВРЕМЕННЫЙ РЕЖИМ: Вывод ссылки в консоль вместо отправки email
-            // ============================================================
-            Console.WriteLine("=================================================");
-            Console.WriteLine("PASSWORD RESET REQUEST");
-            Console.WriteLine("=================================================");
-            Console.WriteLine($"User: {user.Name} ({user.Email})");
-            Console.WriteLine($"Reset URL: {resetUrl}");
-            Console.WriteLine("=================================================");
-            Console.WriteLine("⚠️ Email отправка отключена - скопируйте ссылку выше");
-            Console.WriteLine("=================================================");
-
-            // Закомментировано для тестирования без email
-            /*
-            try
-            {
-                await _emailService.SendPasswordResetEmailAsync(user.Email, user.Name, resetUrl);
-                TempData["Message"] = "Password reset link has been sent to your email.";
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Email Error: {ex.Message}");
-                TempData["Error"] = "Failed to send email. Please try again later.";
-            }
-            */
-
-            TempData["Message"] = "Password reset link generated! Check the console for the link (temporary mode).";
-            return RedirectToAction("Login");
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> ResetPassword(string token)
-        {
-            if (string.IsNullOrEmpty(token))
-                return RedirectToAction("Login");
-
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.PasswordResetToken == token);
-
-            if (user == null || user.PasswordResetTokenExpiry == null || 
-                user.PasswordResetTokenExpiry < DateTime.UtcNow.AddHours(5))
-            {
-                TempData["Error"] = "Invalid or expired password reset token.";
-                return RedirectToAction("Login");
-            }
-
-            var model = new ResetPasswordViewModel
-            {
-                Token = token
-            };
-
             return View(model);
         }
 
-        [HttpPost]
-        public async Task<IActionResult> ResetPassword(ResetPasswordViewModel model)
+        // Check if email already exists
+        if (await _context.Users.AnyAsync(u => u.Email == model.Email))
         {
-            if (!ModelState.IsValid)
-                return View(model);
+            ModelState.AddModelError("Email", "This email is already registered");
+            return View(model);
+        }
 
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.PasswordResetToken == model.Token);
+        // Create new user with Unverified status
+        var user = new User
+        {
+            Name = model.Name,
+            Email = model.Email,
+            Organization = model.Organization,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(model.Password),
+            RegistrationTime = DateTime.UtcNow,
+            LastLoginTime = DateTime.UtcNow,
+            IsBlocked = false,
+            IsEmailVerified = false,  // Unverified status
+            EmailVerificationToken = Guid.NewGuid().ToString(),
+            PasswordResetToken = null,
+            PasswordResetTokenExpiry = null
+        };
 
-            if (user == null || user.PasswordResetTokenExpiry == null || 
-                user.PasswordResetTokenExpiry < DateTime.UtcNow.AddHours(5))
+        _context.Users.Add(user);
+        await _context.SaveChangesAsync();
+
+        // ✅ ГЕНЕРИРУЕМ URL ДО Task.Run() - иначе HttpContext будет disposed
+        var verificationUrl = Url.Action(
+            "VerifyEmail",
+            "Account",
+            new { token = user.EmailVerificationToken },
+            Request.Scheme
+        );
+
+        // Send verification email (fire-and-forget)
+        _ = Task.Run(async () =>
+        {
+            try
             {
-                ModelState.AddModelError(string.Empty, "Invalid or expired password reset token.");
-                return View(model);
+                await _emailService.SendConfirmationEmailAsync(user.Email, user.Name, verificationUrl!);
+                _logger.LogInformation($"Verification email sent to {user.Email}");
             }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Failed to send verification email to {user.Email}");
+            }
+        });
 
-            // Обновляем пароль
-            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(model.NewPassword);
-            user.PasswordResetToken = null;
-            user.PasswordResetTokenExpiry = null;
+        // Redirect to login page with success message
+        TempData["SuccessMessage"] = "Registration successful! Please sign in with your credentials.";
+        return RedirectToAction("Login");
+    }
 
+    [HttpGet]
+    public async Task<IActionResult> VerifyEmail(string token)
+    {
+        if (string.IsNullOrEmpty(token))
+        {
+            TempData["ErrorMessage"] = "Invalid verification link";
+            return RedirectToAction("Login");
+        }
+
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.EmailVerificationToken == token);
+
+        if (user == null)
+        {
+            TempData["ErrorMessage"] = "Verification link is invalid";
+            return RedirectToAction("Login");
+        }
+
+        // Update user status to Active (IsEmailVerified = true)
+        user.IsEmailVerified = true;
+        user.EmailVerificationToken = null;
+        await _context.SaveChangesAsync();
+
+        TempData["SuccessMessage"] = "Email verified successfully! Your status is now Active.";
+        return RedirectToAction("Login");
+    }
+
+    [HttpGet]
+    public IActionResult Login()
+    {
+        if (User.Identity?.IsAuthenticated == true)
+        {
+            return RedirectToAction("Index", "Users");
+        }
+        return View();
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> Login(LoginViewModel model)
+    {
+        if (!ModelState.IsValid)
+        {
+            return View(model);
+        }
+
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == model.Email);
+
+        if (user == null || !BCrypt.Net.BCrypt.Verify(model.Password, user.PasswordHash))
+        {
+            ModelState.AddModelError(string.Empty, "Invalid email or password");
+            return View(model);
+        }
+
+        // Check if user is blocked
+        if (user.IsBlocked)
+        {
+            ModelState.AddModelError(string.Empty, "Your account has been blocked");
+            return View(model);
+        }
+
+        // Update last login time
+        user.LastLoginTime = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+
+        // Create claims and sign in
+        var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new Claim(ClaimTypes.Name, user.Name),
+            new Claim(ClaimTypes.Email, user.Email)
+        };
+
+        var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+        var authProperties = new AuthenticationProperties
+        {
+            IsPersistent = false,
+            ExpiresUtc = DateTimeOffset.UtcNow.AddHours(1)
+        };
+
+        await HttpContext.SignInAsync(
+            CookieAuthenticationDefaults.AuthenticationScheme,
+            new ClaimsPrincipal(claimsIdentity),
+            authProperties
+        );
+
+        // ВАЖНО: Устанавливаем Session для совместимости с UsersController
+        HttpContext.Session.SetInt32("UserId", user.Id);
+
+        return RedirectToAction("Index", "Users");
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> Logout()
+    {
+        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        HttpContext.Session.Clear();
+        return RedirectToAction("Login");
+    }
+
+    [HttpGet]
+    public IActionResult ForgotPassword()
+    {
+        return View();
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> ForgotPassword(ForgotPasswordViewModel model)
+    {
+        if (!ModelState.IsValid)
+        {
+            return View(model);
+        }
+
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == model.Email);
+
+        if (user != null && !user.IsBlocked)
+        {
+            // Generate reset token
+            user.PasswordResetToken = Guid.NewGuid().ToString();
+            user.PasswordResetTokenExpiry = DateTime.UtcNow.AddHours(1);
             await _context.SaveChangesAsync();
 
-            Console.WriteLine("=================================================");
-            Console.WriteLine($"✅ Password successfully reset for: {user.Email}");
-            Console.WriteLine("=================================================");
+            // ✅ ГЕНЕРИРУЕМ URL ДО Task.Run() - иначе HttpContext будет disposed
+            var resetUrl = Url.Action(
+                "ResetPassword",
+                "Account",
+                new { token = user.PasswordResetToken },
+                Request.Scheme
+            );
 
-            TempData["Message"] = "Your password has been reset successfully! You can now login with your new password.";
-            return RedirectToAction("Login");
+            // Send reset email (fire-and-forget)
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await _emailService.SendPasswordResetEmailAsync(user.Email, user.Name, resetUrl!);
+                    _logger.LogInformation($"Password reset email sent to {user.Email}");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, $"Failed to send password reset email to {user.Email}");
+                }
+            });
         }
 
-        [HttpPost]
-        public IActionResult Logout()
+        // Always show success message (security best practice)
+        TempData["SuccessMessage"] = "If an account exists with this email, a password reset link has been sent.";
+        return RedirectToAction("Login");
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> ResetPassword(string token)
+    {
+        if (string.IsNullOrEmpty(token))
         {
-            HttpContext.Session.Clear();
+            TempData["ErrorMessage"] = "Invalid reset link";
             return RedirectToAction("Login");
         }
+
+        var user = await _context.Users.FirstOrDefaultAsync(u => 
+            u.PasswordResetToken == token && 
+            u.PasswordResetTokenExpiry > DateTime.UtcNow);
+
+        if (user == null)
+        {
+            TempData["ErrorMessage"] = "Reset link is invalid or expired";
+            return RedirectToAction("Login");
+        }
+
+        return View(new ResetPasswordViewModel { Token = token });
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> ResetPassword(ResetPasswordViewModel model)
+    {
+        if (!ModelState.IsValid)
+        {
+            return View(model);
+        }
+
+        var user = await _context.Users.FirstOrDefaultAsync(u => 
+            u.PasswordResetToken == model.Token && 
+            u.PasswordResetTokenExpiry > DateTime.UtcNow);
+
+        if (user == null)
+        {
+            TempData["ErrorMessage"] = "Reset link is invalid or expired";
+            return RedirectToAction("Login");
+        }
+
+        // Update password
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(model.NewPassword);
+        user.PasswordResetToken = null;
+        user.PasswordResetTokenExpiry = null;
+        await _context.SaveChangesAsync();
+
+        TempData["SuccessMessage"] = "Password reset successfully! You can now sign in.";
+        return RedirectToAction("Login");
     }
 }

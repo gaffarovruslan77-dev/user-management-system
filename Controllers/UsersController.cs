@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using UserManagementApp.Data;
 using UserManagementApp.Models;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 
 namespace UserManagementApp.Controllers
 {
@@ -21,7 +23,7 @@ namespace UserManagementApp.Controllers
                 return RedirectToAction("Login", "Account");
 
             var currentUser = await _context.Users.FindAsync(userId.Value);
-            if (currentUser == null || currentUser.IsBlocked || currentUser.IsDeleted)
+            if (currentUser == null || currentUser.IsBlocked)
             {
                 HttpContext.Session.Clear();
                 return RedirectToAction("Login", "Account");
@@ -37,28 +39,25 @@ namespace UserManagementApp.Controllers
                     RegistrationTime = u.RegistrationTime,
                     LastLoginTime = u.LastLoginTime,
                     IsBlocked = u.IsBlocked,
-                    IsDeleted = u.IsDeleted,
-                    WasBlockedBeforeDelete = u.WasBlockedBeforeDelete
+                    IsEmailVerified = u.IsEmailVerified
                 })
                 .ToListAsync();
             
             // Сортировка: текущий пользователь первый, затем остальные по статусу и алфавиту
             var sortedUsers = allUsers
-                .OrderBy(u => u.Id != userId.Value ? 0 : -1) // Текущий пользователь первый
-                .ThenBy(u => u.Id == userId.Value ? 0 : GetStatusOrder(u)) // Сортировка по статусу
-                .ThenBy(u => u.Id == userId.Value ? "" : u.Name) // Сортировка по имени
+                .OrderBy(u => u.Id != userId.Value ? 0 : -1)
+                .ThenBy(u => u.Id == userId.Value ? 0 : GetStatusOrder(u))
+                .ThenBy(u => u.Id == userId.Value ? "" : u.Name)
                 .ToList();
 
-            // Передаём ID текущего пользователя в View
             ViewBag.CurrentUserId = userId.Value;
-
             return View(sortedUsers);
         }
 
         private int GetStatusOrder(UserListViewModel user)
         {
-            if (user.IsDeleted) return 3;
-            if (user.IsBlocked) return 2;
+            if (user.IsBlocked) return 3;
+            if (!user.IsEmailVerified) return 2;
             return 1; // Active
         }
 
@@ -72,13 +71,7 @@ namespace UserManagementApp.Controllers
             if (ids == null || ids.Length == 0)
                 return RedirectToAction("Index");
 
-            // Убираем текущего пользователя из списка блокировки
-            var idsToBlock = ids.Where(id => id != userId.Value).ToArray();
-            
-            if (idsToBlock.Length == 0)
-                return RedirectToAction("Index");
-
-            var users = await _context.Users.Where(u => idsToBlock.Contains(u.Id)).ToListAsync();
+            var users = await _context.Users.Where(u => ids.Contains(u.Id)).ToListAsync();
             
             foreach (var user in users)
             {
@@ -86,6 +79,15 @@ namespace UserManagementApp.Controllers
             }
 
             await _context.SaveChangesAsync();
+
+            // Если пользователь заблокировал себя - выходим
+            if (ids.Contains(userId.Value))
+            {
+                await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                HttpContext.Session.Clear();
+                return RedirectToAction("Login", "Account");
+            }
+
             return RedirectToAction("Index");
         }
 
@@ -107,6 +109,7 @@ namespace UserManagementApp.Controllers
             }
 
             await _context.SaveChangesAsync();
+
             return RedirectToAction("Index");
         }
 
@@ -120,76 +123,46 @@ namespace UserManagementApp.Controllers
             if (ids == null || ids.Length == 0)
                 return RedirectToAction("Index");
 
-            var users = await _context.Users.Where(u => ids.Contains(u.Id)).ToListAsync();
-            
-            foreach (var user in users)
-            {
-                // Сохраняем статус блокировки перед удалением
-                user.WasBlockedBeforeDelete = user.IsBlocked;
-                user.IsDeleted = true;
-            }
-
-            await _context.SaveChangesAsync();
-
+            // Если пользователь удаляет себя - СНАЧАЛА выходим, ПОТОМ удаляем
             if (ids.Contains(userId.Value))
             {
+                // РЕАЛЬНОЕ УДАЛЕНИЕ из базы данных
+                var usersToDelete = await _context.Users.Where(u => ids.Contains(u.Id)).ToListAsync();
+                _context.Users.RemoveRange(usersToDelete);
+                await _context.SaveChangesAsync();
+
+                // ✅ ВАЖНО: SignOut ПОСЛЕ удаления из базы, чтобы избежать редиректов
+                await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
                 HttpContext.Session.Clear();
                 return RedirectToAction("Login", "Account");
             }
 
-            return RedirectToAction("Index");
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> Undelete(int[] ids, bool unblockAll = false)
-        {
-            var userId = HttpContext.Session.GetInt32("UserId");
-            if (userId == null)
-                return RedirectToAction("Login", "Account");
-
-            if (ids == null || ids.Length == 0)
-                return RedirectToAction("Index");
-
+            // Обычное удаление других пользователей
             var users = await _context.Users.Where(u => ids.Contains(u.Id)).ToListAsync();
-            
-            foreach (var user in users)
-            {
-                user.IsDeleted = false;
-                
-                // Если unblockAll=true или пользователь не был заблокирован, делаем Active
-                if (unblockAll || !user.WasBlockedBeforeDelete)
-                {
-                    user.IsBlocked = false;
-                }
-                // Иначе восстанавливаем статус блокировки
-                else
-                {
-                    user.IsBlocked = user.WasBlockedBeforeDelete;
-                }
-                
-                // Сбрасываем флаг после восстановления
-                user.WasBlockedBeforeDelete = false;
-            }
-
+            _context.Users.RemoveRange(users);
             await _context.SaveChangesAsync();
+
             return RedirectToAction("Index");
         }
 
         [HttpPost]
-        public async Task<IActionResult> UndeleteAll()
+        public async Task<IActionResult> DeleteAllUnverified()
         {
             var userId = HttpContext.Session.GetInt32("UserId");
             if (userId == null)
                 return RedirectToAction("Login", "Account");
 
-            var deletedUsers = await _context.Users.Where(u => u.IsDeleted).ToListAsync();
-            
-            foreach (var user in deletedUsers)
+            // Находим всех unverified пользователей
+            var unverifiedUsers = await _context.Users
+                .Where(u => !u.IsEmailVerified)
+                .ToListAsync();
+
+            if (unverifiedUsers.Any())
             {
-                user.IsDeleted = false;
+                _context.Users.RemoveRange(unverifiedUsers);
+                await _context.SaveChangesAsync();
             }
 
-            await _context.SaveChangesAsync();
             return RedirectToAction("Index");
         }
     }

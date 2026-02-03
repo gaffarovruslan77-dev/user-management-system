@@ -22,12 +22,8 @@ namespace UserManagementApp.Models
         public DateTime RegistrationTime { get; set; }
         public DateTime? LastLoginTime { get; set; }
         public bool IsBlocked { get; set; }
-        public bool IsDeleted { get; set; }
         public bool IsEmailVerified { get; set; }
         public string? EmailVerificationToken { get; set; }
-        
-        // Новое поле для хранения статуса блокировки перед удалением
-        public bool WasBlockedBeforeDelete { get; set; }
 
         // Поля для восстановления пароля
         public string? PasswordResetToken { get; set; }

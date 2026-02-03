@@ -53,8 +53,9 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 app.UseStaticFiles();
+
 app.UseRouting();
 
 // ВАЖНО: Session должна быть ПЕРЕД Authentication
@@ -62,6 +63,7 @@ app.UseSession();
 app.UseAuthentication();
 app.UseAuthorization();
 
+// ✅ ВКЛЮЧАЕМ MIDDLEWARE - он должен быть ПОСЛЕ Authentication
 app.UseMiddleware<UserStatusCheckMiddleware>();
 
 app.MapControllerRoute(

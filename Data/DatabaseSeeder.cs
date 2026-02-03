@@ -20,7 +20,8 @@ namespace UserManagementApp.Data
                     Email = "alice@example.com",
                     PasswordHash = BCrypt.Net.BCrypt.HashPassword("password123"),
                     RegistrationTime = DateTime.UtcNow.AddDays(-30),
-                    IsBlocked = false
+                    IsBlocked = false,
+                    IsEmailVerified = true
                 },
                 new User
                 {
@@ -28,7 +29,8 @@ namespace UserManagementApp.Data
                     Email = "bob@example.com",
                     PasswordHash = BCrypt.Net.BCrypt.HashPassword("password123"),
                     RegistrationTime = DateTime.UtcNow.AddDays(-20),
-                    IsBlocked = false
+                    IsBlocked = false,
+                    IsEmailVerified = true
                 },
                 new User
                 {
@@ -36,7 +38,8 @@ namespace UserManagementApp.Data
                     Email = "charlie@example.com",
                     PasswordHash = BCrypt.Net.BCrypt.HashPassword("password123"),
                     RegistrationTime = DateTime.UtcNow.AddDays(-10),
-                    IsBlocked = false
+                    IsBlocked = false,
+                    IsEmailVerified = false
                 }
             };
 
