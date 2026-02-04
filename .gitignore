@@ -36,3 +36,7 @@ artifacts/
 appsettings.*.json
 !appsettings.json
 !appsettings.Development.json
+
+# Local secrets - NEVER commit
+appsettings.*.local.json
+*.backup
