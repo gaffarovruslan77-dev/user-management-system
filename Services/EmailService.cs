@@ -7,14 +7,13 @@ public class EmailService
 {
     private readonly IConfiguration _configuration;
     private readonly ILogger<EmailService> _logger;
-    private readonly ResendClient _resend;
+    private readonly IResend _resend;
 
-    public EmailService(IConfiguration configuration, ILogger<EmailService> logger)
+    public EmailService(IConfiguration configuration, ILogger<EmailService> logger, IResend resend)
     {
         _configuration = configuration;
         _logger = logger;
-        var apiKey = _configuration["Resend:ApiKey"];
-        _resend = new ResendClient(apiKey);
+        _resend = resend;
     }
 
     public async Task SendConfirmationEmailAsync(string toEmail, string userName, string verificationUrl)
@@ -53,13 +52,13 @@ public class EmailService
                 </html>";
 
             var message = new EmailMessage();
-            message.From = _configuration["Email:FromAddress"];
+            message.From = _configuration["Email:FromAddress"] ?? "noreply@yourdomain.com";
             message.To.Add(toEmail);
             message.Subject = "Verify Your Email - User Management App";
             message.HtmlBody = htmlContent;
 
             var response = await _resend.EmailSendAsync(message);
-            _logger.LogInformation($"✅ Verification email sent to {toEmail}. ID: {response.Data?.Id}");
+            _logger.LogInformation($"✅ Verification email sent to {toEmail}. ID: {response.Id}");
         }
         catch (Exception ex)
         {
@@ -103,13 +102,13 @@ public class EmailService
                 </html>";
 
             var message = new EmailMessage();
-            message.From = _configuration["Email:FromAddress"];
+            message.From = _configuration["Email:FromAddress"] ?? "noreply@yourdomain.com";
             message.To.Add(toEmail);
             message.Subject = "Password Reset Request - User Management App";
             message.HtmlBody = htmlContent;
 
             var response = await _resend.EmailSendAsync(message);
-            _logger.LogInformation($"✅ Password reset email sent to {toEmail}. ID: {response.Data?.Id}");
+            _logger.LogInformation($"✅ Password reset email sent to {toEmail}. ID: {response.Id}");
         }
         catch (Exception ex)
         {

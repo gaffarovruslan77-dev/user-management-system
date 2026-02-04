@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using UserManagementApp.Data;
 using UserManagementApp.Middleware;
 using UserManagementApp.Services;
+using Resend;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -32,19 +33,21 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.SlidingExpiration = true;
     });
 
-// Register EmailService
+// Register Resend Email Service
+builder.Services.AddOptions<ResendClientOptions>().Configure(o =>
+{
+    o.ApiToken = builder.Configuration["Resend:ApiKey"] ?? "";
+});
+builder.Services.AddHttpClient<IResend, ResendClient>();
 builder.Services.AddScoped<EmailService>();
 
 var app = builder.Build();
 
-// Log Email configuration on startup (without exposing password)
+// Log Email configuration on startup
 var logger = app.Services.GetRequiredService<ILogger<Program>>();
 logger.LogInformation($"Email Configuration:");
-logger.LogInformation($"  SMTP Server: {builder.Configuration["Email:SmtpServer"]}");
-logger.LogInformation($"  SMTP Port: {builder.Configuration["Email:SmtpPort"]}");
+logger.LogInformation($"  Resend API Key configured: {!string.IsNullOrEmpty(builder.Configuration["Resend:ApiKey"])}");
 logger.LogInformation($"  From Address: {builder.Configuration["Email:FromAddress"]}");
-logger.LogInformation($"  Username: {builder.Configuration["Email:Username"]}");
-logger.LogInformation($"  Password configured: {!string.IsNullOrEmpty(builder.Configuration["Email:Password"])}");
 
 // Seed database
 using (var scope = app.Services.CreateScope())
@@ -64,7 +67,6 @@ if (!app.Environment.IsDevelopment())
 
 //app.UseHttpsRedirection();
 app.UseStaticFiles();
-
 app.UseRouting();
 
 // ВАЖНО: Session должна быть ПЕРЕД Authentication
