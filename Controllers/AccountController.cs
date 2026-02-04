@@ -79,12 +79,13 @@ public class AccountController : Controller
         {
             try
             {
+                _logger.LogInformation($"Attempting to send verification email to {user.Email}");
                 await _emailService.SendConfirmationEmailAsync(user.Email, user.Name, verificationUrl!);
-                _logger.LogInformation($"Verification email sent to {user.Email}");
+                _logger.LogInformation($"✅ Verification email successfully sent to {user.Email}");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Failed to send verification email to {user.Email}");
+                _logger.LogError(ex, $"❌ Failed to send verification email to {user.Email}: {ex.Message}");
             }
         });
 
@@ -222,19 +223,28 @@ public class AccountController : Controller
                 Request.Scheme
             );
 
+            _logger.LogInformation($"Password reset requested for {user.Email}");
+            _logger.LogInformation($"Reset URL: {resetUrl}");
+
             // Send reset email (fire-and-forget)
             _ = Task.Run(async () =>
             {
                 try
                 {
+                    _logger.LogInformation($"Attempting to send password reset email to {user.Email}");
                     await _emailService.SendPasswordResetEmailAsync(user.Email, user.Name, resetUrl!);
-                    _logger.LogInformation($"Password reset email sent to {user.Email}");
+                    _logger.LogInformation($"✅ Password reset email successfully sent to {user.Email}");
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, $"Failed to send password reset email to {user.Email}");
+                    _logger.LogError(ex, $"❌ Failed to send password reset email to {user.Email}: {ex.Message}");
+                    _logger.LogError($"Stack trace: {ex.StackTrace}");
                 }
             });
+        }
+        else
+        {
+            _logger.LogWarning($"Password reset requested for non-existent or blocked email: {model.Email}");
         }
 
         // Always show success message (security best practice)
