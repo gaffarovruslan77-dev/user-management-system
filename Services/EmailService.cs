@@ -58,7 +58,7 @@ public class EmailService
             message.HtmlBody = htmlContent;
 
             var response = await _resend.EmailSendAsync(message);
-            _logger.LogInformation($"✅ Verification email sent to {toEmail}. ID: {response.Id}");
+            _logger.LogInformation($"✅ Verification email sent to {toEmail}");
         }
         catch (Exception ex)
         {
@@ -108,7 +108,7 @@ public class EmailService
             message.HtmlBody = htmlContent;
 
             var response = await _resend.EmailSendAsync(message);
-            _logger.LogInformation($"✅ Password reset email sent to {toEmail}. ID: {response.Id}");
+            _logger.LogInformation($"✅ Password reset email sent to {toEmail}");
         }
         catch (Exception ex)
         {
