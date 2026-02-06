@@ -868,7 +868,7 @@
 @functions {
     private string GetTimeAgo(DateTime dateTime)
     {
-        var now = DateTime.UtcNow.AddHours(5);
+        var now = DateTime.UtcNow;
         var span = now - dateTime;
         
         if (span.TotalMinutes < 1) return "less than a minute ago";
