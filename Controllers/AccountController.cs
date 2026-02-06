@@ -48,7 +48,7 @@ public class AccountController : Controller
             Organization = model.Organization,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(model.Password),
             RegistrationTime = DateTime.UtcNow,
-            LastLoginTime = DateTime.UtcNow,
+            LastLoginTime = null,
             IsBlocked = false,
             IsEmailVerified = false,
             EmailVerificationToken = Guid.NewGuid().ToString(),
