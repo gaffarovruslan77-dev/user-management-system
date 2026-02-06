@@ -40,13 +40,6 @@ public class AccountController : Controller
             return View(model);
         }
 
-        // Check if email already exists
-        if (await _context.Users.AnyAsync(u => u.Email == model.Email))
-        {
-            ModelState.AddModelError("Email", "This email is already registered");
-            return View(model);
-        }
-
         // Create new user with Unverified status
         var user = new User
         {
@@ -57,16 +50,30 @@ public class AccountController : Controller
             RegistrationTime = DateTime.UtcNow,
             LastLoginTime = DateTime.UtcNow,
             IsBlocked = false,
-            IsEmailVerified = false,  // Unverified status
+            IsEmailVerified = false,
             EmailVerificationToken = Guid.NewGuid().ToString(),
             PasswordResetToken = null,
             PasswordResetTokenExpiry = null
         };
 
-        _context.Users.Add(user);
-        await _context.SaveChangesAsync();
+        try
+        {
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync(); // База данных сама проверит уникальность Email
+        }
+        catch (DbUpdateException ex)
+        {
+            // --- ДОБАВЛЕНО: Перехват ошибки индекса БД (PostgreSQL 23505) ---
+            if (ex.InnerException?.Message.Contains("23505") == true || 
+                ex.InnerException?.Message.Contains("unique constraint") == true)
+            {
+                ModelState.AddModelError("Email", "This email is already registered (DB Index Violation)");
+                return View(model);
+            }
+            throw; // Пробрасываем остальные ошибки
+        }
 
-        // ✅ ГЕНЕРИРУЕМ URL ДО Task.Run() - иначе HttpContext будет disposed
+        // ✅ ГЕНЕРИРУЕМ URL ДО Task.Run()
         var verificationUrl = Url.Action(
             "VerifyEmail",
             "Account",
@@ -89,7 +96,6 @@ public class AccountController : Controller
             }
         });
 
-        // Redirect to login page with success message
         TempData["SuccessMessage"] = "Registration successful! Please sign in with your credentials.";
         return RedirectToAction("Login");
     }
@@ -111,7 +117,6 @@ public class AccountController : Controller
             return RedirectToAction("Login");
         }
 
-        // Update user status to Active (IsEmailVerified = true)
         user.IsEmailVerified = true;
         user.EmailVerificationToken = null;
         await _context.SaveChangesAsync();
@@ -146,18 +151,15 @@ public class AccountController : Controller
             return View(model);
         }
 
-        // Check if user is blocked
         if (user.IsBlocked)
         {
             ModelState.AddModelError(string.Empty, "Your account has been blocked");
             return View(model);
         }
 
-        // Update last login time
         user.LastLoginTime = DateTime.UtcNow;
         await _context.SaveChangesAsync();
 
-        // Create claims and sign in
         var claims = new List<Claim>
         {
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
@@ -178,7 +180,6 @@ public class AccountController : Controller
             authProperties
         );
 
-        // ВАЖНО: Устанавливаем Session для совместимости с UsersController
         HttpContext.Session.SetInt32("UserId", user.Id);
 
         return RedirectToAction("Index", "Users");
@@ -210,12 +211,10 @@ public class AccountController : Controller
 
         if (user != null && !user.IsBlocked)
         {
-            // Generate reset token
             user.PasswordResetToken = Guid.NewGuid().ToString();
             user.PasswordResetTokenExpiry = DateTime.UtcNow.AddHours(1);
             await _context.SaveChangesAsync();
 
-            // ✅ ГЕНЕРИРУЕМ URL ДО Task.Run() - иначе HttpContext будет disposed
             var resetUrl = Url.Action(
                 "ResetPassword",
                 "Account",
@@ -223,31 +222,19 @@ public class AccountController : Controller
                 Request.Scheme
             );
 
-            _logger.LogInformation($"Password reset requested for {user.Email}");
-            _logger.LogInformation($"Reset URL: {resetUrl}");
-
-            // Send reset email (fire-and-forget)
             _ = Task.Run(async () =>
             {
                 try
                 {
-                    _logger.LogInformation($"Attempting to send password reset email to {user.Email}");
                     await _emailService.SendPasswordResetEmailAsync(user.Email, user.Name, resetUrl!);
-                    _logger.LogInformation($"✅ Password reset email successfully sent to {user.Email}");
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, $"❌ Failed to send password reset email to {user.Email}: {ex.Message}");
-                    _logger.LogError($"Stack trace: {ex.StackTrace}");
+                    _logger.LogError(ex, $"❌ Failed to send reset email: {ex.Message}");
                 }
             });
         }
-        else
-        {
-            _logger.LogWarning($"Password reset requested for non-existent or blocked email: {model.Email}");
-        }
 
-        // Always show success message (security best practice)
         TempData["SuccessMessage"] = "If an account exists with this email, a password reset link has been sent.";
         return RedirectToAction("Login");
     }
@@ -292,7 +279,6 @@ public class AccountController : Controller
             return RedirectToAction("Login");
         }
 
-        // Update password
         user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(model.NewPassword);
         user.PasswordResetToken = null;
         user.PasswordResetTokenExpiry = null;
